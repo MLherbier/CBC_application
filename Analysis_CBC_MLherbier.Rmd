@@ -1,7 +1,7 @@
 ---
 title: "Case study #1 : DevOps engineer – biodiversity footprint tool (GBS)"
 author: "Mathias Lherbier "
-date: '2024-01-13'
+date: '15-01-2024'
 output: 
   html_document: 
     toc: true
@@ -18,9 +18,9 @@ library(plotly)
 
 ## Introduction
 
-The goal of this analysis was to compute the total static biodiversity loss due to land use caused by wheat production in several countries for the year 2019.
+The goal of this analysis was to compute the total static biodiversity loss due to land use caused by wheat production for the year 2019.
 
-Wheat dataset was retrieved on the FAO website (<https://www.fao.org/faostat/en/#data/QCL>). Both area harvested and production figures were downloaded for all countries in 2019 and are respectively stored in the files area.csv and production.csv.
+Wheat dataset was retrieved from the FAO website (<https://www.fao.org/faostat/en/#data/QCL>). Both area harvested and production figures were downloaded for all countries in 2019 and are respectively stored in the files area.csv and production.csv.
 
 Production impact factors were provided in the file crops.csv. Countries data were also provided in the file country_specs.csv.
 
@@ -54,7 +54,7 @@ area = area %>%
 ```
 
 Then, we filter out data we will not use for the rest of the analysis.
-It means retaining only impact factors for wheat, the ISO-2 code for countries, and only production quantities data (that we rename production instead of Value).
+It means retaining only impact factors for wheat, the ISO-2 code for countries and only production quantities data (that we rename production instead of Value).
 
 ```{r}
 
@@ -125,7 +125,7 @@ ggplotly(map_static_impact)
 
 ```
 
-A more basic representation of the data : 
+Another way of visualizing data as a bar plot : 
   
 ```{r, fig.align='center'}
 
@@ -142,9 +142,9 @@ ggplotly(plot_static_impact)
 
 **Going a bit further**
 
-Now we will look at the total terrestrial effects of wheat production and no longer restrict the analysis to static impacts. It means including dynamic (land conversion) & static effects, fragmentation, encroachment and climate change impacts in our calculations.
+Now we will try to look at the total terrestrial effects of wheat production and no longer restrict the analysis to static impacts. It means including dynamic (land conversion) & static effects, fragmentation, encroachment and climate change impacts in our calculations.
 
-However, we will restrict the analysis to terrestrial land as the calculations for aquatic land may be a bit different and I did not have enough time to properly understand how these work.
+However, we will restrict the analysis to terrestrial land as the calculations for aquatic land may be a bit different (I did not have enough time to properly understand how these work).
 
 Let's compute the sum of the effects of wheat for 2019. Here we also multiply the impacts by the production to get the impacts in every country. Then we add them together to get the total effect in every country. Again the values are rounded for convenience.
 
