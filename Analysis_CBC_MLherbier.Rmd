@@ -146,7 +146,7 @@ Now we will try to look at the total terrestrial effects of wheat production and
 
 However, we will restrict the analysis to terrestrial land as the calculations for aquatic land may be a bit different (I did not have enough time to properly understand how these work).
 
-Let's compute the sum of the effects of wheat for 2019. Here we also multiply the impacts by the production to get the impacts in every country. Then we add them together to get the total effect in every country. Again the values are rounded for convenience.
+Let's compute the sum of the effects of wheat for 2019. Here we also multiply the impacts factors in MSA.km²/t by the production to get the impacts in MSA.km². Then we add them together to get the total effect in every country. Again the values are rounded for convenience.
 
 ```{r message=FALSE}
 
