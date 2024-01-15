@@ -1,0 +1,184 @@
+---
+title: "Case study #1 : DevOps engineer – biodiversity footprint tool (GBS)"
+author: "Mathias Lherbier "
+date: '2024-01-13'
+output: 
+  html_document: 
+    toc: true
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(rnaturalearth)
+library(plotly)
+
+```
+
+## Introduction
+
+The goal of this analysis was to compute the total static biodiversity loss due to land use caused by wheat production in several countries for the year 2019.
+
+Wheat dataset was retrieved on the FAO website (<https://www.fao.org/faostat/en/#data/QCL>). Both area harvested and production figures were downloaded for all countries in 2019 and are respectively stored in the files area.csv and production.csv.
+
+Production impact factors were provided in the file crops.csv. Countries data were also provided in the file country_specs.csv.
+
+## Data pre-processing
+
+```{r message=F, warning=FALSE}
+
+crops_data = read_csv("crops.csv")
+country_specs = read_csv('country_specs.csv')
+production = read_csv('production.csv')
+area = read_csv('area.csv')
+
+```
+
+Let's first standardize country headers for all data.
+
+```{r}
+
+crops_data = crops_data %>%
+  mutate(globio_country_code = str_pad(as.character(globio_country_code), width = 3, pad = 0))
+
+country_specs = country_specs %>%
+  mutate(globio_country_code = str_pad(as.character(globio_country_code), width = 3, pad = 0))
+
+production = production %>% 
+  rename(globio_country_code = `Area Code (M49)`) 
+
+area = area %>% 
+  rename(globio_country_code = `Area Code (M49)`)
+
+```
+
+Then, we filter out data we will not use for the rest of the analysis.
+It means retaining only impact factors for wheat, the ISO-2 code for countries, and only production quantities data (that we rename production instead of Value).
+
+```{r}
+
+wheat_data = crops_data %>% 
+  filter(item_name == "Wheat") 
+
+country_data = country_specs %>% 
+  select(globio_country_code, alpha_2_code)
+
+production = production %>% 
+  select(globio_country_code, Value) %>%
+  rename(production = Value)
+
+```
+
+Areas were provided in ha so we convert these to square kilometers for our calculations.
+
+```{r}
+
+area_subset = area %>%
+  mutate(area_sqkm = Value / 100) %>%
+  select(globio_country_code, area_sqkm)
+
+```
+
+Ultimately, we merge all data into one data frame, using the globio_country_code.
+
+```{r message=FALSE}
+
+production_data = wheat_data %>%
+  left_join(production) %>%
+  left_join(area_subset) %>%
+  left_join(country_data)
+
+```
+
+## Computation
+
+Now, let's compute static impact.
+
+As impact factors were provided in MSA.km²/t, we have to multiply the land use static impact by wheat production in tons to get the static impact in every country. For convenience, the values are rounded.
+
+```{r message=FALSE}
+
+production_data = production_data %>%
+  mutate(static_impact = msa_land_use_static * production) %>%
+  mutate(static_impact = round(static_impact))
+
+```
+
+We can visualize the results as a map :
+
+```{r, fig.align='center'}
+
+countries_geom = ne_countries(scale = "medium", returnclass = "sf") %>%
+  select(iso_a2, geometry)
+
+production_data = countries_geom %>% 
+    right_join(production_data , by = c("iso_a2" = "alpha_2_code"))
+
+map_static_impact <- ggplot(production_data) +
+  geom_sf(aes(geometry = geometry)) +
+  labs(x="Longitude", y="Latitude", fill="Static impact") +
+  ggtitle("Total static biodiversity loss due to land use caused by wheat in 2019") +
+  geom_sf(aes(fill = static_impact))+
+  theme_bw()
+ggplotly(map_static_impact)
+
+```
+
+A more basic representation of the data : 
+  
+```{r, fig.align='center'}
+
+plot_static_impact <- ggplot(production_data, aes(x=reorder(iso_a2,-static_impact), y=static_impact, fill=static_impact)) + 
+  labs(x="Country", y="Static Impact", fill = "Static Impact", title="Total static biodiversity loss due to land use caused by wheat in 2019 in MSA.km²") +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label=static_impact), vjust=1.5, size=2, colour="brown") +
+  coord_flip()
+
+ggplotly(plot_static_impact)
+
+```
+
+
+**Going a bit further**
+
+Now we will look at the total terrestrial effects of wheat production and no longer restrict the analysis to static impacts. It means including dynamic (land conversion) & static effects, fragmentation, encroachment and climate change impacts in our calculations.
+
+However, we will restrict the analysis to terrestrial land as the calculations for aquatic land may be a bit different and I did not have enough time to properly understand how these work.
+
+Let's compute the sum of the effects of wheat for 2019. Here we also multiply the impacts by the production to get the impacts in every country. Then we add them together to get the total effect in every country. Again the values are rounded for convenience.
+
+```{r message=FALSE}
+
+production_data = production_data %>%
+  mutate(total_terrestrial_impact = production *(msa_land_use_dynamic+msa_land_use_static+msa_fragmentation_dynamic+msa_fragmentation_static+msa_encroachment_dynamic+msa_encroachment_static+msa_climate_change_terrestrial_dynamic)) %>%
+  mutate(total_terrestrial_impact=round(total_terrestrial_impact))
+```
+
+Here is the associated map
+
+```{r, fig.align='center'}
+
+map_terrestrial_impact <- ggplot(production_data) +
+  geom_sf(aes(geometry = geometry)) +
+  labs(x="Longitude", y="Latitude", fill="Static impact") +
+  ggtitle("Total static biodiversity loss due to land use caused by wheat in 2019") +
+  geom_sf(aes(fill = total_terrestrial_impact))+
+  theme_bw()
+ggplotly(map_terrestrial_impact)
+
+```
+
+Similarly, a bar plot can be used to represent data : 
+
+```{r, fig.align='center'}
+
+plot_terrestrial_impact <- ggplot(production_data, aes(x=reorder(iso_a2,-total_terrestrial_impact), y=total_terrestrial_impact, fill=total_terrestrial_impact)) + 
+  labs(x="Country", y="Total Terrestrial Impact", fill = "Total Terrestrial Impact", title="Total terrestrial biodiversity loss due to land use caused by wheat in 2019 in MSA.km²") +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label=total_terrestrial_impact), vjust=1.5, size=2, colour="brown") +
+  coord_flip()
+
+ggplotly(plot_terrestrial_impact)
+
+```
