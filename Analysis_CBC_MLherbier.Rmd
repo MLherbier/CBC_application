@@ -35,7 +35,7 @@ area = read_csv('area.csv')
 
 ```
 
-Let's first standardize country headers for all data.
+First, let's standardize country headers for all data.
 
 ```{r}
 
@@ -54,7 +54,7 @@ area = area %>%
 ```
 
 Then, we filter out data we will not use for the rest of the analysis.
-It means retaining only impact factors for wheat, the ISO-2 code for countries and only production quantities data (that we rename production instead of Value).
+It means only retaining impact factors for wheat, the ISO-2 code for countries and production quantities data (that we rename production instead of Value).
 
 ```{r}
 
