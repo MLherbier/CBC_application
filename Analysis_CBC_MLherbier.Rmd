@@ -133,7 +133,8 @@ plot_static_impact <- ggplot(production_data, aes(x=reorder(iso_a2,-static_impac
   labs(x="Country", y="Static Impact", fill = "Static Impact", title="Total static biodiversity loss due to land use caused by wheat in 2019 in MSA.km²") +
   geom_bar(stat = "identity") +
   geom_text(aes(label=static_impact), vjust=1.5, size=2, colour="brown") +
-  coord_flip()
+  coord_flip() +
+  theme_minimal()
 
 ggplotly(plot_static_impact)
 
@@ -146,39 +147,75 @@ Now we will try to look at the total terrestrial effects of wheat production and
 
 However, we will restrict the analysis to terrestrial land as the calculations for aquatic land may be a bit different (I did not have enough time to properly understand how these work).
 
-Let's compute the sum of the effects of wheat for 2019. Here we also multiply the impacts factors in MSA.km²/t by the production to get the impacts in MSA.km². Then we add them together to get the total effect in every country. Again the values are rounded for convenience.
+Let's compute the total of the static effects and dynamic effects for wheat in 2019. Here we also multiply the impacts factors in MSA.km²/t by the production to get the impacts in MSA.km².
+
+Here, I also compute the static effect for the year 2020 following the formula static(n+1) = static(n) + dynamic(n) found in the GBS report from 2021.
+
+Again the values are rounded for convenience.
 
 ```{r message=FALSE}
 
 production_data = production_data %>%
-  mutate(total_terrestrial_impact = production *(msa_land_use_dynamic+msa_land_use_static+msa_fragmentation_dynamic+msa_fragmentation_static+msa_encroachment_dynamic+msa_encroachment_static+msa_climate_change_terrestrial_dynamic)) %>%
-  mutate(total_terrestrial_impact=round(total_terrestrial_impact))
+  mutate(total_static_impact = production *(msa_land_use_static+msa_fragmentation_static+msa_encroachment_static)) %>%
+  mutate(total_static_impact=round(total_static_impact))
+
+production_data = production_data %>%
+  mutate(total_dynamic_impact = production *(msa_land_use_dynamic+msa_fragmentation_dynamic+msa_encroachment_dynamic+msa_climate_change_terrestrial_dynamic)) %>%
+  mutate(total_dynamic_impact=round(total_dynamic_impact))
+
+production_data = production_data %>%
+  mutate(static_impact_2020 = total_dynamic_impact + total_static_impact) %>%
+  mutate(static_impact_2020=round(static_impact_2020))
 ```
 
-Here is the associated map
+#Here is the associated map
 
-```{r, fig.align='center'}
+#```{r, fig.align='center'}
 
-map_terrestrial_impact <- ggplot(production_data) +
-  geom_sf(aes(geometry = geometry)) +
-  labs(x="Longitude", y="Latitude", fill="Static impact") +
-  ggtitle("Total static biodiversity loss due to land use caused by wheat in 2019") +
-  geom_sf(aes(fill = total_terrestrial_impact))+
-  theme_bw()
-ggplotly(map_terrestrial_impact)
+#map_terrestrial_static_impact <- ggplot(production_data) +
+#  geom_sf(aes(geometry = geometry)) +
+#  labs(x="Longitude", y="Latitude", fill="Static impact") +
+#  ggtitle("Total static biodiversity loss due to land use caused by wheat in 2019") +
+#  geom_sf(aes(fill = total_terrestrial_impact))+
+#  theme_bw()
+#ggplotly(map_terrestrial_impact)
 
-```
+#```
 
 Similarly, a bar plot can be used to represent data : 
 
 ```{r, fig.align='center'}
 
-plot_terrestrial_impact <- ggplot(production_data, aes(x=reorder(iso_a2,-total_terrestrial_impact), y=total_terrestrial_impact, fill=total_terrestrial_impact)) + 
-  labs(x="Country", y="Total Terrestrial Impact", fill = "Total Terrestrial Impact", title="Total terrestrial biodiversity loss due to land use caused by wheat in 2019 in MSA.km²") +
+plot_total_static_impact <- ggplot(production_data, aes(x=reorder(iso_a2,-total_static_impact), y=total_static_impact, fill=total_static_impact)) + 
+  labs(x="Country", y="Total Static Impact", fill = "Total Static Impact", title="Total Static Impact due to land use caused by wheat in 2019 in MSA.km²") +
   geom_bar(stat = "identity") +
-  geom_text(aes(label=total_terrestrial_impact), vjust=1.5, size=2, colour="brown") +
+  geom_text(aes(label=total_static_impact), vjust=1.5, size=2, colour="brown") +
   coord_flip()
 
-ggplotly(plot_terrestrial_impact)
+ggplotly(plot_total_static_impact)
+
+```
+
+```{r, fig.align='center'}
+
+plot_total_dynamic_impact <- ggplot(production_data, aes(x=reorder(iso_a2,-total_dynamic_impact), y=total_dynamic_impact, fill=total_dynamic_impact)) + 
+  labs(x="Country", y="Total Dynamic Impact", fill = "Total Dynamic Impact", title="Total Dynamic Impact due to land use caused by wheat in 2019 in MSA.km²") +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label=total_dynamic_impact), vjust=1.5, size=2, colour="brown") +
+  coord_flip()
+
+ggplotly(plot_total_dynamic_impact)
+
+```
+
+```{r, fig.align='center'}
+
+plot_static_impact_2020 <- ggplot(production_data, aes(x=reorder(iso_a2,-static_impact_2020), y=static_impact_2020, fill=static_impact_2020)) + 
+  labs(x="Country", y="Static Impact", fill = "Static Impact", title="Static Impact due to land use caused by wheat in 2020 in MSA.km²") +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label=static_impact_2020), vjust=1.5, size=2, colour="brown") +
+  coord_flip()
+
+ggplotly(plot_static_impact_2020)
 
 ```
